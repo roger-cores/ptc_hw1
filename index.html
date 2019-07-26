@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+
+        <title>Babylon.js sample code</title>
+
+        <!-- Babylon.js -->
+        <script src="https://code.jquery.com/pep/0.4.2/pep.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/dat-gui/0.6.2/dat.gui.min.js"></script>
+        <script src="https://preview.babylonjs.com/ammo.js"></script>
+        <script src="https://preview.babylonjs.com/cannon.js"></script>
+        <script src="https://preview.babylonjs.com/Oimo.js"></script>
+        <script src="https://preview.babylonjs.com/gltf_validator.js"></script>
+        <script src="https://preview.babylonjs.com/earcut.min.js"></script>
+        <script src="https://preview.babylonjs.com/babylon.js"></script>
+        <script src="https://preview.babylonjs.com/inspector/babylon.inspector.bundle.js"></script>
+        <script src="https://preview.babylonjs.com/materialsLibrary/babylonjs.materials.min.js"></script>
+        <script src="https://preview.babylonjs.com/proceduralTexturesLibrary/babylonjs.proceduralTextures.min.js"></script>
+        <script src="https://preview.babylonjs.com/postProcessesLibrary/babylonjs.postProcess.min.js"></script>
+        <script src="https://preview.babylonjs.com/loaders/babylonjs.loaders.js"></script>
+        <script src="https://preview.babylonjs.com/serializers/babylonjs.serializers.min.js"></script>
+        <script src="https://preview.babylonjs.com/gui/babylon.gui.min.js"></script>
+
+        <style>
+            html, body {
+                overflow: hidden;
+                width: 100%;
+                height: 100%;
+                margin: 0;
+                padding: 0;
+            }
+
+            #renderCanvas {
+                width: 100%;
+                height: 100%;
+                touch-action: none;
+            }
+        </style>
+    </head>
+<body>
+    <canvas id="renderCanvas"></canvas>
+    <script>
+        var canvas = document.getElementById("renderCanvas");
+
+        let camera = null
+        let light0 = null
+        let light1 = null
+        let obj_rotation = new BABYLON.Vector3(-Math.PI/2, 0, 0)
+        let obj_position = new BABYLON.Vector3(-10, -10, -10)
+
+        let floor_meshes = ['chunk006_group001_sub002', 'chunk000_group001_sub002', 'chunk012_group001_sub002', 'chunk023_group001_sub002']
+
+        var createScene = function () {
+            var scene = new BABYLON.Scene(engine);
+
+            canvas.addEventListener('dblclick', function(res) {
+              var pickResult = scene.pick(scene.pointerX, scene.pointerY);
+              if(floor_meshes.includes(pickResult.pickedMesh.name)) {
+
+
+                var positionAnimation = new BABYLON.Animation("camPos", "position", 30, BABYLON.Animation.ANIMATIONTYPE_VECTOR3, BABYLON.Animation.ANIMATIONLOOPMODE_CONSTANT);
+                var keys1 = [{
+                    frame : 0,
+                    value : camera.position
+                }, {
+                    frame : 50,
+                    value : new BABYLON.Vector3(pickResult.pickedPoint.x, camera.position.y, pickResult.pickedPoint.z)
+                }];
+
+                positionAnimation.setKeys(keys1);
+                camera.animations.push(positionAnimation);
+                scene.beginAnimation(camera, 0, 50, false, 1);
+              } else {
+                console.log(pickResult.pickedMesh.name)
+              }
+            })
+
+            BABYLON.SceneLoader.Append("./obj_file/", "ec527d9146654ef6b1a8e9c43160c030_50k.obj", scene, function(loaded_scene) {
+              loaded_scene.meshes.forEach((mesh, i) => {
+                  mesh.rotation = obj_rotation
+                  mesh.position = obj_position
+              })
+            });
+
+            // Lights
+            light0 = new BABYLON.DirectionalLight("Omni", new BABYLON.Vector3(-2, -5, 2), scene);
+            light0.intensity = 5
+
+            // Need a free camera for collisions
+            camera = new BABYLON.UniversalCamera("UC", new BABYLON.Vector3(0, -8, -20), scene);
+
+            camera.attachControl(canvas, true);
+            camera.keysDown.push(83)
+            camera.keysUp.push(87)
+            camera.keysLeft.push(65)
+            camera.keysRight.push(68)
+
+            camera.speed = .1
+
+
+
+            //Set gravity for the scene (G force like, on Y-axis)
+            // scene.gravity = new BABYLON.Vector3(0, -0.9, 0);
+
+            // Enable Collisions
+            scene.collisionsEnabled = true;
+
+            //Then apply collisions and gravity to the active camera
+            camera.checkCollisions = true;
+            // camera.applyGravity = true;
+
+            //Set the ellipsoid around the camera (e.g. your player's size)
+            camera.ellipsoid = new BABYLON.Vector3(1, 1, 1);
+
+            return scene;
+        }
+
+        var engine = new BABYLON.Engine(canvas, true, { preserveDrawingBuffer: true, stencil: true });
+        var scene = createScene();
+
+        engine.runRenderLoop(function () {
+            if (scene) {
+                scene.render();
+            }
+        });
+
+        // Resize
+        window.addEventListener("resize", function () {
+            engine.resize();
+        });
+    </script>
+</body>
+</html>
